@@ -1,0 +1,64 @@
+    # Custom Version Control System (Mini Git)
+
+## 1. Project Title
+
+Custom Version Control System (Mini Git)
+
+## 2. Objective
+
+The objective of this project is to develop a simplified version control system similar to Git. The system will help users track file changes, maintain version history, and restore previous versions of files using command-line operations.
+
+## 3. Problem Statement
+
+Managing multiple versions of files manually is difficult and error-prone. This project provides a lightweight version control solution that allows users to save, track, and retrieve different versions of files efficiently.
+
+## 4. Proposed Solution
+
+The Mini Git system will create a local repository where file snapshots and commit information will be stored. Users can initialize a repository, add files, commit changes, view commit history, and check repository status through command-line commands.
+
+## 5. Features
+
+* Repository Initialization (init)
+* Add Files to Staging Area (add)
+* Commit Changes (commit)
+* View Commit History (log)
+* Check Repository Status (status)
+
+## 6. Technology Stack
+
+* Python
+* Object-Oriented Programming (OOP)
+* File Handling
+* JSON
+* SHA-256 Hashing
+* Command Line Interface (Argparse)
+* Data Structures (Hash Maps, Trees, Linked Lists)
+* Git
+* Visual Studio Code
+
+## 7. System Workflow
+
+User Command
+↓
+Command Parser
+↓
+Mini Git Engine
+↓
+Staging Area
+↓
+Commit Storage
+↓
+Log History
+
+## 8. Expected Outcome
+
+The project will provide a working command-line version control system capable of tracking file versions, maintaining commit history, and managing repository data locally.
+
+## 9. Future Enhancements
+
+* Branching
+* Merging
+* Checkout/Rollback
+* Remote Repository Support
+* Graphical User Interface (GUI)
+

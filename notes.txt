@@ -1,0 +1,3 @@
+version 1
+
+python mygit.py add notes.txt
