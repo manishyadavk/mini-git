@@ -1,62 +1,63 @@
-import sys
+import argparse
 
 from commands.init import init_repository
 from commands.add import add_file
+from commands.rm import remove_file
 from commands.commit import commit_changes
 from commands.log import show_log
 from commands.status import show_status
 from commands.checkout import checkout_commit
 
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog="mygit",
+        description="Mini Git: a simplified version control system."
+    )
+    subparsers = parser.add_subparsers(dest="command")
+
+    subparsers.add_parser("init", help="Initialize an empty repository")
+
+    add_parser = subparsers.add_parser("add", help="Stage a file")
+    add_parser.add_argument("filename", help="Path to the file to stage")
+
+    rm_parser = subparsers.add_parser("rm", help="Untrack a file and stage its removal")
+    rm_parser.add_argument("filename", help="Path to the file to untrack")
+
+    commit_parser = subparsers.add_parser("commit", help="Commit staged changes")
+    commit_parser.add_argument("message", help="Commit message")
+
+    subparsers.add_parser("log", help="Show commit history")
+    subparsers.add_parser("status", help="Show staged/modified/untracked files")
+
+    checkout_parser = subparsers.add_parser(
+        "checkout", help="Restore files from a commit"
+    )
+    checkout_parser.add_argument("commit_id", help="Commit ID to check out")
+
+    return parser
+
+
 def main():
+    parser = build_parser()
+    args = parser.parse_args()
 
-    if len(sys.argv) < 2:
-        print("Usage: python mygit.py <command>")
-        return
-
-    command = sys.argv[1]
-
-    # INIT
-    if command == "init":
+    if args.command == "init":
         init_repository()
-
-    # ADD
-    elif command == "add":
-
-        if len(sys.argv) < 3:
-            print("Usage: python mygit.py add <filename>")
-            return
-
-        add_file(sys.argv[2])
-
-    # COMMIT
-    elif command == "commit":
-
-        if len(sys.argv) < 3:
-            print('Usage: python mygit.py commit "message"')
-            return
-
-        commit_changes(sys.argv[2])
-
-    # LOG
-    elif command == "log":
+    elif args.command == "add":
+        add_file(args.filename)
+    elif args.command == "rm":
+        remove_file(args.filename)
+    elif args.command == "commit":
+        commit_changes(args.message)
+    elif args.command == "log":
         show_log()
-
-    # STATUS
-    elif command == "status":
+    elif args.command == "status":
         show_status()
-
-    # CHECKOUT
-    elif command == "checkout":
-
-        if len(sys.argv) < 3:
-            print("Usage: python mygit.py checkout <commit_id>")
-            return
-
-        checkout_commit(sys.argv[2])
-
-    # UNKNOWN COMMAND
+    elif args.command == "checkout":
+        checkout_commit(args.commit_id)
     else:
-        print(f"Unknown command: {command}")
+        parser.print_help()
 
 
 if __name__ == "__main__":

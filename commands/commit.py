@@ -1,14 +1,16 @@
 import os
 import json
-import shutil
 import hashlib
 from datetime import datetime
 
+from utils.file_manager import load_index, save_index, head_files
+
+
 def commit_changes(message):
 
-    staging_path = ".mygit/staging"
+    index = load_index()
 
-    if not os.listdir(staging_path):
+    if not index:
         print("Nothing to commit.")
         return
 
@@ -18,22 +20,21 @@ def commit_changes(message):
         (message + timestamp).encode()
     ).hexdigest()[:8]
 
-    commit_folder = os.path.join(".mygit/commits", commit_id)
-
+    commit_folder = os.path.join(".mygit", "commits", commit_id)
     os.makedirs(commit_folder)
 
-    # Copy staged files into commit snapshot
-    for file in os.listdir(staging_path):
-        source = os.path.join(staging_path, file)
-        destination = os.path.join(commit_folder, file)
-
-        if os.path.isfile(source):
-            shutil.copy2(source, destination)
+    # a commit is a full snapshot: carry forward every file already tracked
+    # by the parent commit, then layer the newly staged changes on top.
+    # a None entry means the path was staged for removal (see commands/rm.py)
+    # and must be dropped from the snapshot rather than carried forward.
+    merged = {**head_files(), **index}
+    files = {path: obj_hash for path, obj_hash in merged.items() if obj_hash is not None}
 
     commit_data = {
         "id": commit_id,
         "message": message,
-        "timestamp": timestamp
+        "timestamp": timestamp,
+        "files": files
     }
 
     with open(
@@ -45,10 +46,6 @@ def commit_changes(message):
     with open(".mygit/HEAD", "w") as head:
         head.write(commit_id)
 
+    save_index({})
+
     print(f"Commit created: {commit_id}")
-
-    for file in os.listdir(staging_path):
-     file_path = os.path.join(staging_path, file)
-
-    if os.path.isfile(file_path):
-        os.remove(file_path)
