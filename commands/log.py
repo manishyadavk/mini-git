@@ -1,41 +1,41 @@
 import os
 import json
 
+from utils.file_manager import read_head, current_branch
+
+
+def _load_commit(commit_id):
+    metadata_file = os.path.join(".mygit", "commits", commit_id, "metadata.json")
+
+    if not os.path.exists(metadata_file):
+        return None
+
+    with open(metadata_file, "r") as f:
+        return json.load(f)
+
 
 def show_log():
 
-    commits_path = ".mygit/commits"
+    commit_id = read_head()
 
-    if not os.path.exists(commits_path):
+    if commit_id is None:
         print("No commits found.")
         return
 
-    commit_ids = os.listdir(commits_path)
+    branch = current_branch()
+    print(f"On branch {branch}" if branch else "HEAD detached")
 
-    if not commit_ids:
-        print("No commits found.")
-        return
+    # walk parent pointers from HEAD rather than listing every commit ever
+    # made, so log only shows the current branch's own ancestry
+    while commit_id:
+        data = _load_commit(commit_id)
 
-    commits = []
+        if data is None:
+            break
 
-    for commit_id in commit_ids:
-
-        metadata_file = os.path.join(
-            commits_path,
-            commit_id,
-            "metadata.json"
-        )
-
-        if os.path.exists(metadata_file):
-            with open(metadata_file, "r") as f:
-                commits.append(json.load(f))
-
-    # commit ids are a hash of message+timestamp, so sorting by id is not
-    # chronological -- sort by the recorded timestamp instead.
-    commits.sort(key=lambda c: c["timestamp"], reverse=True)
-
-    for data in commits:
         print("\n--------------------")
         print(f"Commit ID : {data['id']}")
         print(f"Message   : {data['message']}")
         print(f"Timestamp : {data['timestamp']}")
+
+        commit_id = data.get("parent")

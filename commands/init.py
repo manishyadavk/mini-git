@@ -1,5 +1,8 @@
 import os
 
+from utils.file_manager import HEADS_DIR, DEFAULT_BRANCH
+
+
 def init_repository():
     repo_path = ".mygit"
 
@@ -10,8 +13,9 @@ def init_repository():
     os.makedirs(".mygit/commits")
     os.makedirs(".mygit/staging")
     os.makedirs(".mygit/objects")
+    os.makedirs(HEADS_DIR)
 
     with open(".mygit/HEAD", "w") as head:
-        head.write("")
+        head.write(f"ref: {DEFAULT_BRANCH}")
 
-    print("Initialized empty Mini Git repository.")
+    print(f"Initialized empty Mini Git repository on branch '{DEFAULT_BRANCH}'.")

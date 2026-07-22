@@ -3,7 +3,10 @@ import json
 import hashlib
 from datetime import datetime
 
-from utils.file_manager import load_index, save_index, head_files
+from utils.file_manager import (
+    load_index, save_index, head_files, read_head,
+    current_branch, write_branch_commit, set_head_detached
+)
 
 
 def commit_changes(message):
@@ -14,10 +17,11 @@ def commit_changes(message):
         print("Nothing to commit.")
         return
 
+    parent_id = read_head()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     commit_id = hashlib.sha256(
-        (message + timestamp).encode()
+        (message + timestamp + (parent_id or "")).encode()
     ).hexdigest()[:8]
 
     commit_folder = os.path.join(".mygit", "commits", commit_id)
@@ -32,6 +36,7 @@ def commit_changes(message):
 
     commit_data = {
         "id": commit_id,
+        "parent": parent_id,
         "message": message,
         "timestamp": timestamp,
         "files": files
@@ -43,8 +48,13 @@ def commit_changes(message):
     ) as f:
         json.dump(commit_data, f, indent=4)
 
-    with open(".mygit/HEAD", "w") as head:
-        head.write(commit_id)
+    # advance whichever branch HEAD is attached to; a detached HEAD just
+    # moves to the new commit without updating any branch
+    branch = current_branch()
+    if branch:
+        write_branch_commit(branch, commit_id)
+    else:
+        set_head_detached(commit_id)
 
     save_index({})
 

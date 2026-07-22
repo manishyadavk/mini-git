@@ -7,6 +7,7 @@ from commands.commit import commit_changes
 from commands.log import show_log
 from commands.status import show_status
 from commands.checkout import checkout_commit
+from commands.branch import list_all_branches, create_branch
 
 
 def build_parser():
@@ -31,9 +32,22 @@ def build_parser():
     subparsers.add_parser("status", help="Show staged/modified/untracked files")
 
     checkout_parser = subparsers.add_parser(
-        "checkout", help="Restore files from a commit"
+        "checkout", help="Switch branches or restore files from a commit"
     )
-    checkout_parser.add_argument("commit_id", help="Commit ID to check out")
+    checkout_parser.add_argument(
+        "target", nargs="?", help="Branch name or commit ID to check out"
+    )
+    checkout_parser.add_argument(
+        "-b", dest="new_branch", metavar="name",
+        help="Create a new branch at the current commit and switch to it"
+    )
+
+    branch_parser = subparsers.add_parser(
+        "branch", help="List branches, or create a new one"
+    )
+    branch_parser.add_argument(
+        "name", nargs="?", help="Name of the branch to create"
+    )
 
     return parser
 
@@ -55,7 +69,18 @@ def main():
     elif args.command == "status":
         show_status()
     elif args.command == "checkout":
-        checkout_commit(args.commit_id)
+        if args.new_branch:
+            create_branch(args.new_branch)
+            checkout_commit(args.new_branch)
+        elif args.target:
+            checkout_commit(args.target)
+        else:
+            parser.error("checkout requires a branch name, commit ID, or -b <name>")
+    elif args.command == "branch":
+        if args.name:
+            create_branch(args.name)
+        else:
+            list_all_branches()
     else:
         parser.print_help()
 

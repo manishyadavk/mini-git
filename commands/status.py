@@ -1,6 +1,6 @@
 import os
 
-from utils.file_manager import load_index, relative_path, head_files
+from utils.file_manager import load_index, relative_path, head_files, current_branch
 from utils.hashing import hash_file
 
 IGNORED_DIRS = {".mygit", ".git", "__pycache__"}
@@ -28,6 +28,9 @@ def show_status():
     if not os.path.exists(".mygit"):
         print("Repository not initialized.")
         return empty_result
+
+    branch = current_branch()
+    print(f"On branch {branch}" if branch else "HEAD detached")
 
     staged = load_index()
     committed = head_files()

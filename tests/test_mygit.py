@@ -6,7 +6,10 @@ from commands.rm import remove_file
 from commands.commit import commit_changes
 from commands.checkout import checkout_commit
 from commands.status import show_status
-from utils.file_manager import OBJECTS_DIR, load_index, head_files
+from commands.branch import create_branch
+from utils.file_manager import (
+    OBJECTS_DIR, load_index, head_files, current_branch, list_branches, read_head
+)
 
 
 def write(path, content):
@@ -23,8 +26,7 @@ def read(path):
 
 
 def latest_commit_id():
-    with open(".mygit/HEAD") as f:
-        return f.read().strip()
+    return read_head()
 
 
 def test_init_creates_repo_structure(repo):
@@ -215,3 +217,98 @@ def test_rm_on_staged_but_uncommitted_file(repo):
     result = show_status()
     assert "new.txt" in result["removed"]
     assert "new.txt" not in result["untracked"]
+
+
+def test_init_attaches_head_to_main_branch(repo):
+    init_repository()
+
+    assert current_branch() == "main"
+    # main isn't a real ref until the first commit, mirroring real git
+    assert "main" not in list_branches()
+
+
+def test_first_commit_creates_main_branch_ref(repo):
+    init_repository()
+    write("a.txt", "a")
+    add_file("a.txt")
+    commit_changes("first commit")
+
+    assert "main" in list_branches()
+    assert current_branch() == "main"
+
+
+def test_new_branch_starts_from_current_commit(repo):
+    init_repository()
+    write("a.txt", "a")
+    add_file("a.txt")
+    commit_changes("first commit")
+    first_id = latest_commit_id()
+
+    create_branch("feature")
+
+    assert set(list_branches()) == {"main", "feature"}
+    # branch creation alone doesn't move HEAD
+    assert current_branch() == "main"
+
+    checkout_commit("feature")
+    assert current_branch() == "feature"
+    assert latest_commit_id() == first_id
+
+
+def test_branches_diverge_independently(repo):
+    init_repository()
+    write("shared.txt", "v1")
+    add_file("shared.txt")
+    commit_changes("first commit")
+
+    create_branch("feature")
+    checkout_commit("feature")
+
+    write("feature_only.txt", "feature work")
+    add_file("feature_only.txt")
+    commit_changes("feature commit")
+
+    assert os.path.exists("feature_only.txt")
+    assert "feature_only.txt" in head_files()
+
+    checkout_commit("main")
+
+    # switching back to main removes files that only exist on feature...
+    assert not os.path.exists("feature_only.txt")
+    assert "feature_only.txt" not in head_files()
+    # ...and main's own history is untouched by feature's commit
+    assert "shared.txt" in head_files()
+
+
+def test_checkout_commit_id_detaches_head(repo):
+    init_repository()
+    write("a.txt", "a")
+    add_file("a.txt")
+    commit_changes("first commit")
+    first_id = latest_commit_id()
+
+    write("b.txt", "b")
+    add_file("b.txt")
+    commit_changes("second commit")
+
+    checkout_commit(first_id)
+
+    assert current_branch() is None
+    assert latest_commit_id() == first_id
+
+    # committing while detached moves HEAD but does not touch main
+    write("c.txt", "c")
+    add_file("c.txt")
+    commit_changes("detached commit")
+
+    assert current_branch() is None
+    from utils.file_manager import read_branch_commit
+    assert read_branch_commit("main") != latest_commit_id()
+
+
+def test_cannot_branch_before_first_commit(repo):
+    init_repository()
+
+    create_branch("too-early")
+
+    assert list_branches() == []

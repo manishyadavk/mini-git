@@ -6,6 +6,9 @@ from utils.hashing import hash_file
 
 OBJECTS_DIR = os.path.join(".mygit", "objects")
 STAGING_INDEX = os.path.join(".mygit", "staging", "index.json")
+HEADS_DIR = os.path.join(".mygit", "refs", "heads")
+HEAD_FILE = os.path.join(".mygit", "HEAD")
+DEFAULT_BRANCH = "main"
 
 
 def relative_path(filename):
@@ -46,16 +49,76 @@ def save_index(index):
         json.dump(index, f, indent=4)
 
 
-def read_head():
-    head_path = os.path.join(".mygit", "HEAD")
+def _read_head_raw():
+    if not os.path.exists(HEAD_FILE):
+        return ""
 
-    if not os.path.exists(head_path):
+    with open(HEAD_FILE, "r") as f:
+        return f.read().strip()
+
+
+def current_branch():
+    """The branch HEAD is attached to, or None if HEAD is detached at a commit."""
+    raw = _read_head_raw()
+
+    if raw.startswith("ref: "):
+        return raw[len("ref: "):]
+
+    return None
+
+
+def read_head():
+    """Resolve HEAD to the commit id it currently points at, following a
+    branch ref if HEAD is attached to one, or None if there is no commit yet."""
+    raw = _read_head_raw()
+
+    if not raw:
         return None
 
-    with open(head_path, "r") as f:
+    if raw.startswith("ref: "):
+        return read_branch_commit(raw[len("ref: "):])
+
+    return raw
+
+
+def read_branch_commit(name):
+    branch_path = os.path.join(HEADS_DIR, name)
+
+    if not os.path.exists(branch_path):
+        return None
+
+    with open(branch_path, "r") as f:
         commit_id = f.read().strip()
 
     return commit_id or None
+
+
+def write_branch_commit(name, commit_id):
+    os.makedirs(HEADS_DIR, exist_ok=True)
+
+    with open(os.path.join(HEADS_DIR, name), "w") as f:
+        f.write(commit_id)
+
+
+def branch_exists(name):
+    return os.path.exists(os.path.join(HEADS_DIR, name))
+
+
+def list_branches():
+    if not os.path.exists(HEADS_DIR):
+        return []
+
+    return sorted(os.listdir(HEADS_DIR))
+
+
+def set_head_to_branch(name):
+    with open(HEAD_FILE, "w") as f:
+        f.write(f"ref: {name}")
+
+
+def set_head_detached(commit_id):
+    with open(HEAD_FILE, "w") as f:
+        f.write(commit_id)
 
 
 def load_commit_files(commit_id):
